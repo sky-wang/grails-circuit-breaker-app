@@ -10,6 +10,16 @@ beans = {
 		timeoutMillis = 5000 // fail fast for 5 seconds (giving the service a chance to heal itself), then try again
 	}
 	
+	breakerAspectTwo(breaker.CircuitBreakerAspect)
+	{
+		id = 'breaker-two'
+	}
+	
+	breakerAspectThree(breaker.CircuitBreakerAspect)
+	{
+		id = 'breaker-three'
+	}
+	
 	aop.config("proxy-target-class":true) { 
 		aspect(id:"serviceTestCallOneBreaker", ref:"breakerAspectOne" ) { 
 			around method:"invoke", pointcut: "execution(* MyServiceInterface.testCallOne(..))"
