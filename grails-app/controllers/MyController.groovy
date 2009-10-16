@@ -20,10 +20,30 @@ class MyController
 			message = e.message
 		}
 
+		def message2
+		
+		try
+		{
+			message2 = myService.testCallTwo(fail)
+		}
+		catch(Exception e)
+		{
+			message2 = e.message
+		}
+
 		def timeout = breakerAspectOne.timeoutMillis
 		def threshold = breakerAspectOne.failureThresholdCount
 		def failures = breakerAspectOne.currentFailureCount
 
-		return [message:message, lastCallFailed:fail, timeout:timeout, threshold:threshold, failures:failures]
+		return [
+			lastCallFailed:fail, 
+			message:message, 
+			timeout:timeout, 
+			threshold:threshold, 
+			message2:message2, 
+			timeout2:7000, // timeout2, 
+			threshold2:3, // threshold2, 
+			failures:failures
+		]
 	}
 }

@@ -9,7 +9,71 @@ class MyServiceTests extends grails.test.GrailsUnitTestCase
 		mockLogging(MyService)
 	}
 	
-	void testAroundAdvice()
+	void testAroundAdviceWithMetaprogramming()
+	{
+		def circuitBreaker = MetaclassCircuitBreaker.wrap(MyService, 'testCallOne', [Boolean])
+		
+		assertEquals CircuitBreakerClosedState, circuitBreaker.state.class
+		assertEquals 10, circuitBreaker.state.failureThresholdCount
+		assertEquals 0, circuitBreaker.state.failureCount
+		assertEquals 5000, circuitBreaker.openState.timeoutMillis
+
+		circuitBreaker.failureThresholdCount = 3
+		assertEquals 3, circuitBreaker.state.failureThresholdCount
+
+
+		def myService = new MyService()
+
+		def result = myService.testCallOne(false)
+		
+		assertEquals 'Success', result
+		assertEquals CircuitBreakerClosedState, circuitBreaker.state.class
+
+		shouldFail {
+			myService.testCallOne(true)
+		}
+		assertEquals CircuitBreakerClosedState, circuitBreaker.state.class
+		assertEquals 1, circuitBreaker.state.failureCount
+		
+		shouldFail {
+			myService.testCallOne(true)
+		}
+		assertEquals CircuitBreakerClosedState, circuitBreaker.state.class
+		assertEquals 2, circuitBreaker.state.failureCount
+		
+		// as configured above, third failure should trip the breaker
+		shouldFail {
+			myService.testCallOne(true)
+		}
+		assertEquals CircuitBreakerOpenState, circuitBreaker.state.class
+
+		Thread.currentThread().sleep(1000)
+
+		// still open
+		assertEquals CircuitBreakerOpenState, circuitBreaker.state.class
+
+		Thread.currentThread().sleep(4000)
+
+		// now we should be ready to attempt to reset the breaker
+		// another error should throw a failed reset exception
+		shouldFail(CircuitBreakerFailedResetException) {
+			myService.testCallOne(true)
+		}
+		assertEquals CircuitBreakerOpenState, circuitBreaker.state.class
+
+		Thread.currentThread().sleep(5001)
+
+		// now we should be ready to attempt to reset the breaker 
+		// and a successful attempt should fully reset to a closed state
+		result = myService.testCallOne(false)
+		assertEquals 'Success', result
+		
+		// everything is back to normal when the first call succeeds in a reset attempt
+		assertEquals CircuitBreakerClosedState, circuitBreaker.state.class
+		assertEquals 0, circuitBreaker.state.failureCount
+	}
+	
+	void testAroundAdviceWithAspect()
 	{
 		def bb = new BeanBuilder()
 
@@ -35,7 +99,7 @@ class MyServiceTests extends grails.test.GrailsUnitTestCase
 
 		// check service
 		def myService = appCtx.getBean("myService")
-		CircuitBreakerAspect myAspect = appCtx.getBean('myServiceCircuitBreakerAspect')
+		CircuitBreaker myAspect = appCtx.getBean('myServiceCircuitBreakerAspect')
 
 		assertEquals 'myServiceAspect', myAspect.id
 		assertEquals CircuitBreakerClosedState, myAspect.state.class
