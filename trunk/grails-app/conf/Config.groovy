@@ -5,6 +5,11 @@ grails {
 	}
 }
 
+circuitBreaker.failOnConfigError = true
+ // failureThresholdCount: trip breaker after three failures
+ // timeoutMillis: fail fast for 7 seconds (giving the service a chance to heal itself), then try again
+circuitBreaker.breakerFour = [type:MyService, method:'testCallTwo', argTypes:[Boolean], failureThresholdCount:3, timeoutMillis:7000]
+
 
 
 // locations to search for config files that get merged into the main config
