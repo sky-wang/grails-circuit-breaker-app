@@ -1,0 +1,1 @@
+This is an example application showing usage of the <a href='http://grails.org/CircuitBreaker+Plugin'>Circuit Breaker Grails Plugin</a>
